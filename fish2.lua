@@ -2,8 +2,14 @@
 
 addon.name = 'fish2'
 addon.author = 'ChatGPT'
-addon.version = '1.1.0'
-addon.desc = 'Echoes true when Plinx catches an Elshimo frog.'
+addon.version = '1.2.1'
+addon.desc = 'Echoes true when configured fishing phrases are seen.'
+
+local trigger_map = {
+    ['Plinx caught an Elshimo frog!'] = true,
+    ["You didn't catch anything."] = true,
+    ['You give up.'] = true,
+}
 
 -- Strips basic color control codes often found at the start of FFXI chat lines.
 local function normalize_message(msg)
@@ -14,8 +20,11 @@ end
 ashita.events.register('text_in', 'fish2_text_in', function(e)
     local normalized = normalize_message(e.message)
 
-    if normalized:find('Plinx caught an Elshimo frog!', 1, true) then
-        AshitaCore:GetChatManager():QueueCommand(1, '/echo true')
+    for phrase in pairs(trigger_map) do
+        if normalized:find(phrase, 1, true) then
+            AshitaCore:GetChatManager():QueueCommand(1, '/echo true')
+            break
+        end
     end
 
     return false
