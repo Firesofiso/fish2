@@ -12,6 +12,11 @@ local trigger_map = {
 }
 
 local debug_echo_enabled = false
+local last_message = {
+    raw = nil,
+    normalized = nil,
+}
+local VK_ESCAPE = 0x1B
 
 -- Strips basic color control codes often found at the start of FFXI chat lines.
 local function normalize_message(msg)
@@ -19,29 +24,40 @@ local function normalize_message(msg)
     return (msg or ''):gsub(string.char(0x1E) .. '.', ''):gsub(string.char(0x1F) .. '.', '')
 end
 
--- Queues a chat echo of the raw and normalized incoming message for debugging.
-local function echo_input_message(raw_message)
-    if not debug_echo_enabled then
+-- Tracks the most recent incoming message (raw and normalized) so it can be echoed on demand.
+local function record_message(raw_message)
+    last_message.raw = raw_message
+    last_message.normalized = normalize_message(raw_message)
+end
+
+-- Queues a chat echo of the cached raw and normalized incoming message for debugging.
+local function echo_cached_message()
+    if not debug_echo_enabled or (last_message.raw == nil and last_message.normalized == nil) then
         return
     end
 
-    local normalized = normalize_message(raw_message)
     local chat_manager = AshitaCore:GetChatManager()
-
-    chat_manager:QueueCommand(1, string.format('/echo [fish2] raw: %s', raw_message or '<nil>'))
-    chat_manager:QueueCommand(1, string.format('/echo [fish2] normalized: %s', normalized))
+    chat_manager:QueueCommand(1, string.format('/echo [fish2] raw: %s', last_message.raw or '<nil>'))
+    chat_manager:QueueCommand(1, string.format('/echo [fish2] normalized: %s', last_message.normalized or '<nil>'))
 end
 
 ashita.events.register('text_in', 'fish2_text_in', function(e)
-    local normalized = normalize_message(e.message)
-
-    echo_input_message(e.message)
+    record_message(e.message)
+    local normalized = last_message.normalized
 
     for phrase in pairs(trigger_map) do
         if normalized:find(phrase, 1, true) then
             AshitaCore:GetChatManager():QueueCommand(1, '/echo true')
             break
         end
+    end
+
+    return false
+end)
+
+ashita.events.register('keyboard', 'fish2_keyboard', function(e)
+    if e.down and e.key == VK_ESCAPE then
+        echo_cached_message()
     end
 
     return false

@@ -9,4 +9,4 @@ To inspect the exact server messages (raw and normalized) that are driving catch
 /fish2 debug on
 ```
 
-Use `/fish2 debug off` to disable the echoes or `/fish2 debug` with no arguments to toggle the setting.
+With debug enabled, press **Esc** to echo the most recent incoming message. Use `/fish2 debug off` to disable the echoes or `/fish2 debug` with no arguments to toggle the setting.
